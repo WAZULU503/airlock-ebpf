@@ -1,53 +1,68 @@
 #![no_std]
 #![no_main]
 
+use core::panic::PanicInfo;
+use core::result::Result;
+
 use aya_ebpf::{
-    macros::{lsm, map},
-    maps::{HashMap, PerCpuArray},
+    helpers::{bpf_probe_read_kernel, bpf_probe_read_kernel_str_bytes, bpf_printk},
+    macros::lsm,
     programs::LsmContext,
-    helpers::{bpf_probe_read_kernel, bpf_probe_read_kernel_str_bytes},
 };
 
-use core::panic::PanicInfo;
-
 #[panic_handler]
-fn panic(_: &PanicInfo) -> ! {
+fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
-#[map]
-static BLOCKLIST: HashMap<[u8; 256], u8> = HashMap::with_max_entries(128, 0);
-
-#[map]
-static PATH_BUF: PerCpuArray<[u8; 256]> = PerCpuArray::with_max_entries(1, 0);
-
-#[lsm(hook = "bprm_check_security")]
+#[lsm]
 pub fn bprm_check_security(ctx: LsmContext) -> i32 {
-    unsafe { try_check(&ctx).unwrap_or(0) }
+    match unsafe { try_block(ctx) } {
+        Ok(ret) => ret,
+        Err(_) => 0,
+    }
 }
 
-unsafe fn try_check(ctx: &LsmContext) -> Option<i32> {
-    let bprm = ctx.arg::<*const u8>(0);
-    if bprm.is_null() {
-        return Some(0);
-    }
+unsafe fn try_block(ctx: LsmContext) -> Result<i32, i32> {
+    let bprm: *const u8 = ctx.arg(0);
 
+    // OFFSET (your working one = 104)
     let filename_ptr: *const u8 =
-        bpf_probe_read_kernel(bprm.add(96) as *const *const u8).ok()?;
+        bpf_probe_read_kernel(bprm.add(104) as *const *const u8)
+            .map_err(|_| 0)?;
 
-    let buf = &mut *PATH_BUF.get_ptr_mut(0)?;
-    bpf_probe_read_kernel_str_bytes(filename_ptr, buf).ok()?;
+    let mut buf = [0u8; 256];
 
-    let mut key = [0u8; 256];
-    let mut i = 0;
-    while i < 256 && buf[i] != 0 {
-        key[i] = buf[i];
-        i += 1;
+    if bpf_probe_read_kernel_str_bytes(filename_ptr, &mut buf).is_ok() {
+
+        // DEBUG PRINT (first chars)
+        bpf_printk!(
+            b"PATH: %c%c%c%c%c%c\n",
+            buf[0], buf[1], buf[2],
+            buf[3], buf[4], buf[5]
+        );
+
+        // FIND STRING LENGTH
+        let mut len = 0usize;
+        for i in 0..255usize {
+            if buf[i] == 0 {
+                len = i;
+                break;
+            }
+        }
+
+        // MATCH END == "whoami"
+        if len >= 6 {
+            if buf[len - 6] == b'w' &&
+               buf[len - 5] == b'h' &&
+               buf[len - 4] == b'o' &&
+               buf[len - 3] == b'a' &&
+               buf[len - 2] == b'm' &&
+               buf[len - 1] == b'i' {
+                return Ok(-1);
+            }
+        }
     }
 
-    if BLOCKLIST.get(&key).is_some() {
-        return Some(-1);
-    }
-
-    Some(0)
+    Ok(0)
 }
