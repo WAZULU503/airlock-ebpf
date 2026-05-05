@@ -1,0 +1,17 @@
+[package]
+name = "airlock-clean-ebpf"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+airlock-clean-common = { path = "../airlock-clean-common" }
+
+aya-ebpf = { workspace = true }
+aya-log-ebpf = { workspace = true }
+
+[build-dependencies]
+which = { workspace = true }
+
+[[bin]]
+name = "airlock-clean"
+path = "src/main.rs"

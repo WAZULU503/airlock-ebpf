@@ -1,0 +1,20 @@
+[build]
+rustflags = []
+
+[target.bpfel-unknown-none]
+linker = "bpf-linker"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
