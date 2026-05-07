@@ -1,12 +1,10 @@
 # Airlock
 
-> Kernel-level execution governance using Rust, eBPF, and Linux Security Modules (LSM).
->
-> Intercept and govern process execution before userspace execution occurs.
+Kernel-level execution governance using Rust, eBPF, and Linux Security Modules (LSM).
+
+Intercept and govern process execution before userspace execution occurs.
 
 > **WARNING:** Airlock requires root privileges, BPF LSM enabled in the kernel, and can deny execution system-wide. Test inside a VM or isolated environment first.
-
----
 
 # What Airlock Does
 
@@ -23,8 +21,6 @@ The current prototype focuses on:
 This repository explores deterministic execution governance through kernel-level enforcement rather than userspace trust boundaries.
 
 This prevents compromised or injected userspace components from bypassing execution policies, since enforcement occurs before userspace execution begins.
-
----
 
 # Current Status
 
@@ -48,8 +44,6 @@ The current prototype uses hardcoded enforcement logic for validation and testin
 
 Dynamic policy maps and runtime-configurable governance are planned future phases.
 
----
-
 # Verified Execution Path
 
 ```text
@@ -64,8 +58,6 @@ linux_binprm
 
 This moved Airlock away from brittle pathname-only matching toward canonical kernel object identity.
 
----
-
 # Example Enforcement
 
 Example execution denial:
@@ -76,8 +68,6 @@ bash: /usr/lib/cargo/bin/coreutils/ls: Operation not permitted
 ```
 
 The denial occurs inside the Linux kernel through a BPF LSM hook.
-
----
 
 # Why This Exists
 
@@ -93,8 +83,6 @@ Airlock explores a different direction:
 
 The project is intentionally small in scope and focused on validating the kernel enforcement substrate first.
 
----
-
 # Important Scope Note
 
 Airlock is currently an experimental research/runtime prototype.
@@ -109,8 +97,6 @@ This repository does NOT yet provide:
 - distributed telemetry infrastructure
 
 The current goal is validating correctness and stability of the kernel enforcement path.
-
----
 
 # Quickstart
 
@@ -142,8 +128,6 @@ brew install llvm
 brew install filosottile/musl-cross/musl-cross
 ```
 
----
-
 # Kernel Requirements
 
 Airlock requires:
@@ -169,8 +153,6 @@ bpf
 
 Runtime environment verification checks are included in the repository scripts.
 
----
-
 # Build & Run
 
 ## Build
@@ -184,8 +166,6 @@ cargo build
 ```bash
 sudo cargo run -p xtask -- run
 ```
-
----
 
 # CO-RE Binding Generation
 
@@ -201,8 +181,6 @@ Bindings are generated using `bindgen` with scoped allowlists.
 
 This enables runtime adaptation across kernel layouts without relying on hardcoded offsets.
 
----
-
 # Cross-Compiling on macOS
 
 Cross-compilation works on both Intel and Apple Silicon Macs.
@@ -214,8 +192,6 @@ CC=${ARCH}-linux-musl-gcc cargo build --package airlock-clean --release \
 ```
 
 The resulting binary can be copied into a Linux VM or server for execution.
-
----
 
 # Freeze Tags
 
@@ -235,8 +211,6 @@ hook attach
     -> canonical inode-backed identity
 ```
 
----
-
 # Planned Exploration Areas
 
 Planned evolution areas include:
@@ -246,8 +220,6 @@ Planned evolution areas include:
 - namespace-aware enforcement
 - structured audit telemetry
 - runtime governance tooling
-
----
 
 # Repository Philosophy
 
@@ -269,8 +241,6 @@ initial LSM attach
 ```
 
 rather than presenting a finished security product.
-
----
 
 # License
 
@@ -294,6 +264,6 @@ Unless explicitly stated otherwise, contributions intentionally submitted for in
 
 ## License Files
 
-- [LICENSE-APACHE](LICENSE-APACHE)
-- [LICENSE-MIT](LICENSE-MIT)
-- [LICENSE-GPL2](LICENSE-GPL2)
+- `LICENSE-APACHE`
+- `LICENSE-MIT`
+- `LICENSE-GPL2`
