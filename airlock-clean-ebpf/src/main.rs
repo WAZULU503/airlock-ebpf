@@ -4,14 +4,18 @@
 mod vmlinux;
 
 use aya_ebpf::{
-    helpers::bpf_probe_read_kernel_str_bytes,
     macros::lsm,
     programs::LsmContext,
 };
 
-use aya_log_ebpf::info;
-
-use crate::vmlinux::linux_binprm;
+use crate::vmlinux::{
+    dentry,
+    file,
+    inode,
+    linux_binprm,
+    path,
+    super_block,
+};
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
@@ -29,35 +33,46 @@ pub fn bprm_check_security(ctx: LsmContext) -> i32 {
 fn try_enforce(ctx: LsmContext) -> Result<i32, i32> {
     let bprm: *const linux_binprm = ctx.arg(0);
 
-    let filename_ptr =
-        unsafe { (*bprm).filename as *const u8 };
+    let file_ptr: *mut file = unsafe { (*bprm).file };
 
-    if filename_ptr.is_null() {
+    if file_ptr.is_null() {
         return Ok(0);
     }
 
-    let mut path_buf = [0u8; 256];
+    // bindgen wrapped f_path in anonymous union
+    let f_path: path =
+        unsafe { (*file_ptr).__bindgen_anon_1.f_path };
 
-    let path = match unsafe {
-        bpf_probe_read_kernel_str_bytes(
-            filename_ptr,
-            &mut path_buf,
-        )
-    } {
-        Ok(path) => path,
-        Err(_) => return Ok(0),
-    };
+    let dentry_ptr: *mut dentry = f_path.dentry;
 
-    // strip trailing NULL
-    let path = if let Some((&0, rest)) = path.split_last() {
-        rest
-    } else {
-        path
-    };
+    if dentry_ptr.is_null() {
+        return Ok(0);
+    }
 
-    if path == b"/usr/lib/cargo/bin/coreutils/ls" {
-        info!(&ctx, "AIRLOCK DENY");
+    let inode_ptr: *mut inode =
+        unsafe { (*dentry_ptr).d_inode };
 
+    if inode_ptr.is_null() {
+        return Ok(0);
+    }
+
+    let ino = unsafe { (*inode_ptr).i_ino as u64 };
+
+    let sb_ptr: *mut super_block =
+        unsafe { (*inode_ptr).i_sb };
+
+    if sb_ptr.is_null() {
+        return Ok(0);
+    }
+
+    let dev = unsafe { (*sb_ptr).s_dev };
+
+    unsafe {
+        core::ptr::read_volatile(&dev);
+    }
+
+    // inode-backed deny test
+    if ino == 2621951 {
         return Ok(-1);
     }
 
