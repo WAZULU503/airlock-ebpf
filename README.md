@@ -233,37 +233,34 @@ Airlock intentionally prioritizes:
 
 The repository is structured to show the progression from:
 
-```text
-initial LSM attach
-    -> runtime extraction
-    -> canonical identity traversal
-    -> verified kernel enforcement
-```
+cd ~/airlock-clean
 
-rather than presenting a finished security product.
+python3 - <<'PY'
+from pathlib import Path
 
-# License
+p = Path("README.md")
+text = p.read_text()
 
-With the exception of eBPF code, `airlock-clean` is distributed under either:
+old = """# Airlock
 
-- MIT License
-- Apache License 2.0
+Kernel-level execution governance using Rust, eBPF, and Linux Security Modules (LSM).
 
-at your option.
+Intercept and govern process execution before userspace execution occurs.
+"""
 
-## eBPF Code
+new = """# Airlock
 
-All eBPF code is distributed under either:
+Experimental kernel-level execution control using Rust, Aya, eBPF, and Linux Security Modules (LSM).
 
-- GPLv2
-- MIT License
+Airlock intercepts execution requests at the Linux kernel boundary before userspace execution occurs. The current prototype focuses on validating the enforcement path itself rather than building a complete security product.
+"""
 
-at your option.
+if old not in text:
+    raise SystemExit("target intro block not found")
 
-Unless explicitly stated otherwise, contributions intentionally submitted for inclusion in this project shall be dual licensed under the same terms.
+p.write_text(text.replace(old, new, 1))
 
-## License Files
+print("README intro updated safely.")
+PY
 
-- `LICENSE-APACHE`
-- `LICENSE-MIT`
-- `LICENSE-GPL2`
+git diff README.md
