@@ -233,34 +233,4 @@ Airlock intentionally prioritizes:
 
 The repository is structured to show the progression from:
 
-cd ~/airlock-clean
-
-python3 - <<'PY'
-from pathlib import Path
-
-p = Path("README.md")
-text = p.read_text()
-
-old = """# Airlock
-
-Kernel-level execution governance using Rust, eBPF, and Linux Security Modules (LSM).
-
-Intercept and govern process execution before userspace execution occurs.
-"""
-
-new = """# Airlock
-
-Experimental kernel-level execution control using Rust, Aya, eBPF, and Linux Security Modules (LSM).
-
-Airlock intercepts execution requests at the Linux kernel boundary before userspace execution occurs. The current prototype focuses on validating the enforcement path itself rather than building a complete security product.
-"""
-
-if old not in text:
-    raise SystemExit("target intro block not found")
-
-p.write_text(text.replace(old, new, 1))
-
-print("README intro updated safely.")
-PY
-
-git diff README.md
+`initial LSM attach -> runtime extraction -> canonical inode traversal -> kernel enforcement`
