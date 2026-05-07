@@ -1,0 +1,14 @@
+==============================
+ Airlock Run — Wed May  6 09:57:25 AM IST 2026
+ Kernel: 7.0.0-14-generic
+ Log: /home/wazulu/airlock-clean/tests/run-20260506-095725.log
+==============================
+
+[0;36m[step][0m 1/6 — Environment verification
+==============================
+ Airlock Environment Checker
+==============================
+
+[1] Kernel Version
+[0;32m[PASS][0m Kernel 7.0.0-14-generic (>= 5.8 required)
+[0;31m[fatal][0m Environment check failed.

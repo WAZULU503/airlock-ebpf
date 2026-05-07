@@ -1,0 +1,9 @@
+==============================
+ Airlock Run — Wed May  6 09:53:09 AM IST 2026
+ Kernel: 7.0.0-14-generic
+ Log: /home/wazulu/airlock-clean/tests/run-20260506-095309.log
+==============================
+
+[0;36m[step][0m 1/6 — Environment verification
+bash: /home/wazulu/airlock-clean/scripts/verify-env.sh: No such file or directory
+[0;31m[fatal][0m Environment check failed.
