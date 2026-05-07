@@ -1,14 +1,17 @@
 #![no_std]
 #![no_main]
 
+mod vmlinux;
+
 use aya_ebpf::{
-    helpers::bpf_get_current_comm,
+    helpers::bpf_probe_read_kernel_str_bytes,
     macros::lsm,
     programs::LsmContext,
-    EbpfContext,
 };
 
 use aya_log_ebpf::info;
+
+use crate::vmlinux::linux_binprm;
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
@@ -24,20 +27,36 @@ pub fn bprm_check_security(ctx: LsmContext) -> i32 {
 }
 
 fn try_enforce(ctx: LsmContext) -> Result<i32, i32> {
-    let comm = match bpf_get_current_comm() {
-        Ok(comm) => comm,
+    let bprm: *const linux_binprm = ctx.arg(0);
+
+    let filename_ptr =
+        unsafe { (*bprm).filename as *const u8 };
+
+    if filename_ptr.is_null() {
+        return Ok(0);
+    }
+
+    let mut path_buf = [0u8; 256];
+
+    let path = match unsafe {
+        bpf_probe_read_kernel_str_bytes(
+            filename_ptr,
+            &mut path_buf,
+        )
+    } {
+        Ok(path) => path,
         Err(_) => return Ok(0),
     };
 
-    // STRICT command-name enforcement
-    // safer than broad path matching during stabilization
+    // strip trailing NULL
+    let path = if let Some((&0, rest)) = path.split_last() {
+        rest
+    } else {
+        path
+    };
 
-    if comm.starts_with(b"ls") {
-        info!(
-            &ctx,
-            "AIRLOCK DENY pid={} comm=ls",
-            ctx.pid(),
-        );
+    if path == b"/usr/lib/cargo/bin/coreutils/ls" {
+        info!(&ctx, "AIRLOCK DENY");
 
         return Ok(-1);
     }
