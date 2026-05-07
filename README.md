@@ -1,57 +1,299 @@
-# airlock-clean
+# Airlock
+
+> Kernel-level execution governance using Rust, eBPF, and Linux Security Modules (LSM).
+>
+> Intercept and govern process execution before userspace execution occurs.
+
+> **WARNING:** Airlock requires root privileges, BPF LSM enabled in the kernel, and can deny execution system-wide. Test inside a VM or isolated environment first.
+
+---
+
+# What Airlock Does
+
+Airlock intercepts execution requests at the Linux kernel boundary using BPF LSM hooks.
+
+The current prototype focuses on:
+
+- BPF LSM execution interception
+- CO-RE runtime kernel adaptation
+- Canonical inode-backed identity extraction
+- Verifier-safe kernel object traversal
+- Kernel-level EPERM execution denial
+
+This repository explores deterministic execution governance through kernel-level enforcement rather than userspace trust boundaries.
+
+This prevents compromised or injected userspace components from bypassing execution policies, since enforcement occurs before userspace execution begins.
+
+---
+
+# Current Status
+
+Verified on:
+
+- Ubuntu ARM64 VM
+- Linux kernel `6.7+`
+- Apple Silicon virtualization environments (UTM / VMware Fusion)
+- Aya eBPF runtime
+
+Verified capabilities:
+
+- BPF LSM hook attachment
+- Runtime BTF / CO-RE adaptation
+- `linux_binprm -> file -> f_path -> dentry -> d_inode` traversal
+- Canonical `(i_ino + s_dev)` extraction
+- Kernel-level execution denial via `EPERM`
+- Stable verifier-safe kernel object traversal
+
+The current prototype uses hardcoded enforcement logic for validation and testing purposes.
+
+Dynamic policy maps and runtime-configurable governance are planned future phases.
+
+---
+
+# Verified Execution Path
+
+```text
+linux_binprm
+    -> file
+    -> f_path
+    -> dentry
+    -> d_inode
+    -> (i_ino + s_dev)
+    -> enforcement verdict
+```
+
+This moved Airlock away from brittle pathname-only matching toward canonical kernel object identity.
+
+---
+
+# Example Enforcement
+
+Example execution denial:
+
+```bash
+$ /usr/lib/cargo/bin/coreutils/ls
+bash: /usr/lib/cargo/bin/coreutils/ls: Operation not permitted
+```
+
+The denial occurs inside the Linux kernel through a BPF LSM hook.
+
+---
+
+# Why This Exists
+
+Most AI and automation runtimes rely entirely on userspace trust boundaries.
+
+Airlock explores a different direction:
+
+- deterministic execution governance
+- explicit execution boundaries
+- kernel-level interception
+- transparent runtime behavior
+- canonical execution identity
+
+The project is intentionally small in scope and focused on validating the kernel enforcement substrate first.
+
+---
+
+# Important Scope Note
+
+Airlock is currently an experimental research/runtime prototype.
+
+This repository does NOT yet provide:
+
+- production endpoint security
+- enterprise EDR functionality
+- namespace/container isolation
+- signed policy management
+- hardened recovery tooling
+- distributed telemetry infrastructure
+
+The current goal is validating correctness and stability of the kernel enforcement path.
+
+---
+
+# Quickstart
 
 ## Prerequisites
 
-1. stable rust toolchains: `rustup toolchain install stable`
-1. nightly rust toolchains: `rustup toolchain install nightly --component rust-src`
-1. (if cross-compiling) rustup target: `rustup target add ${ARCH}-unknown-linux-musl`
-1. (if cross-compiling) LLVM: (e.g.) `brew install llvm` (on macOS)
-1. (if cross-compiling) C toolchain: (e.g.) [`brew install filosottile/musl-cross/musl-cross`](https://github.com/FiloSottile/homebrew-musl-cross) (on macOS)
-1. bpf-linker: `cargo install bpf-linker` (`--no-default-features` on macOS)
+### Rust Toolchains
 
-## Build & Run
-
-Use `cargo build`, `cargo check`, etc. as normal. Run your program with:
-
-```shell
-cargo run --release
+```bash
+rustup toolchain install stable
+rustup toolchain install nightly --component rust-src
 ```
 
-Cargo build scripts are used to automatically build the eBPF correctly and include it in the
-program.
+### Rust Targets (optional)
 
-## Cross-compiling on macOS
+```bash
+rustup target add ${ARCH}-unknown-linux-musl
+```
 
-Cross compilation should work on both Intel and Apple Silicon Macs.
+### Required Tools
 
-```shell
+```bash
+cargo install bpf-linker
+```
+
+### macOS Cross-Compile Dependencies
+
+```bash
+brew install llvm
+brew install filosottile/musl-cross/musl-cross
+```
+
+---
+
+# Kernel Requirements
+
+Airlock requires:
+
+- Linux kernel with BPF LSM enabled
+- BTF support enabled
+- `debugfs` mounted
+- root privileges
+
+Verify BPF LSM availability:
+
+```bash
+grep CONFIG_BPF_LSM /boot/config-$(uname -r)
+
+cat /sys/kernel/security/lsm
+```
+
+The active LSM list should contain:
+
+```text
+bpf
+```
+
+Runtime environment verification checks are included in the repository scripts.
+
+---
+
+# Build & Run
+
+## Build
+
+```bash
+cargo build
+```
+
+## Run
+
+```bash
+sudo cargo run -p xtask -- run
+```
+
+---
+
+# CO-RE Binding Generation
+
+Airlock generates runtime kernel bindings directly from the live kernel BTF.
+
+Example:
+
+```bash
+bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
+```
+
+Bindings are generated using `bindgen` with scoped allowlists.
+
+This enables runtime adaptation across kernel layouts without relying on hardcoded offsets.
+
+---
+
+# Cross-Compiling on macOS
+
+Cross-compilation works on both Intel and Apple Silicon Macs.
+
+```bash
 CC=${ARCH}-linux-musl-gcc cargo build --package airlock-clean --release \
   --target=${ARCH}-unknown-linux-musl \
-  --config=target.${ARCH}-unknown-linux-musl.linker=\"${ARCH}-linux-musl-gcc\"
+  --config=target.${ARCH}-unknown-linux-musl.linker="${ARCH}-linux-musl-gcc"
 ```
-The cross-compiled program `target/${ARCH}-unknown-linux-musl/release/airlock-clean` can be
-copied to a Linux server or VM and run there.
 
-## License
+The resulting binary can be copied into a Linux VM or server for execution.
 
-With the exception of eBPF code, airlock-clean is distributed under the terms
-of either the [MIT license] or the [Apache License] (version 2.0), at your
-option.
+---
 
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in this crate by you, as defined in the Apache-2.0 license, shall
-be dual licensed as above, without any additional terms or conditions.
+# Freeze Tags
 
-### eBPF
+Important repository milestones:
 
-All eBPF code is distributed under either the terms of the
-[GNU General Public License, Version 2] or the [MIT license], at your
-option.
+- `v1-lsm-baseline`
+- `phase2-core-path-extraction`
+- `phase2.1-enforcement-verified`
+- `phase3-canonical-inode-enforcement`
 
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in this project by you, as defined in the GPL-2 license, shall be
-dual licensed as above, without any additional terms or conditions.
+The tag progression reflects the architectural evolution from:
 
-[Apache license]: LICENSE-APACHE
-[MIT license]: LICENSE-MIT
-[GNU General Public License, Version 2]: LICENSE-GPL2
+```text
+hook attach
+    -> pathname extraction
+    -> verified enforcement
+    -> canonical inode-backed identity
+```
+
+---
+
+# Planned Exploration Areas
+
+Planned evolution areas include:
+
+- dynamic kernel policy maps
+- signed policy loading
+- namespace-aware enforcement
+- structured audit telemetry
+- runtime governance tooling
+
+---
+
+# Repository Philosophy
+
+Airlock intentionally prioritizes:
+
+- deterministic behavior
+- transparent execution flow
+- explicit governance boundaries
+- verifier-safe kernel interaction
+- observable enforcement semantics
+
+The repository is structured to show the progression from:
+
+```text
+initial LSM attach
+    -> runtime extraction
+    -> canonical identity traversal
+    -> verified kernel enforcement
+```
+
+rather than presenting a finished security product.
+
+---
+
+# License
+
+With the exception of eBPF code, `airlock-clean` is distributed under either:
+
+- MIT License
+- Apache License 2.0
+
+at your option.
+
+## eBPF Code
+
+All eBPF code is distributed under either:
+
+- GPLv2
+- MIT License
+
+at your option.
+
+Unless explicitly stated otherwise, contributions intentionally submitted for inclusion in this project shall be dual licensed under the same terms.
+
+## License Files
+
+- [LICENSE-APACHE](LICENSE-APACHE)
+- [LICENSE-MIT](LICENSE-MIT)
+- [LICENSE-GPL2](LICENSE-GPL2)
