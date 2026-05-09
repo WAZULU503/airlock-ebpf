@@ -1,1 +1,7 @@
-target/
+/target
+**/target
+Cargo.lock.bak
+*.log
+*.tmp
+*.bak
+.DS_Store
