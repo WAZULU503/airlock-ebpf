@@ -4,8 +4,15 @@
 mod vmlinux;
 
 use aya_ebpf::{
-    macros::lsm,
+    macros::{lsm, map},
+    maps::HashMap,
     programs::LsmContext,
+};
+
+use airlock_clean_common::{
+    ACTION_ALLOW,
+    FileIdentity,
+    PolicyEntry,
 };
 
 use crate::vmlinux::{
@@ -21,6 +28,10 @@ use crate::vmlinux::{
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     loop {}
 }
+
+#[map]
+static POLICY_MAP: HashMap<FileIdentity, PolicyEntry> =
+    HashMap::with_max_entries(1024, 0);
 
 #[lsm(hook = "bprm_check_security")]
 pub fn bprm_check_security(ctx: LsmContext) -> i32 {
