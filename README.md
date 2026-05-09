@@ -227,7 +227,7 @@ Airlock intentionally prioritizes:
 
 - deterministic behavior
 - transparent execution flow
-- explicit governance boundaries
+- explicit enforcement boundaries
 - verifier-safe kernel interaction
 - observable enforcement semantics
 
