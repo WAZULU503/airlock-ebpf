@@ -1,3 +1,11 @@
 [workspace]
-members = ["ebpf", "userspace"]
-resolver = "2"
+members = [
+    "ebpf",
+    "userspace"
+]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
