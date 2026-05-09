@@ -1,6 +1,6 @@
 # Airlock
 
-Kernel-level execution governance using Rust, eBPF, and Linux Security Modules (LSM).
+Kernel-level execution enforcement using Rust, eBPF, and Linux Security Modules (LSM).
 
 Intercept and govern process execution before userspace execution occurs.
 
@@ -42,7 +42,7 @@ Verified capabilities:
 
 The current prototype uses hardcoded enforcement logic for validation and testing purposes.
 
-Dynamic policy maps and runtime-configurable governance are planned future phases.
+Dynamic policy maps and runtime-configurable enforcement are planned future phases.
 
 # Verified Execution Path
 
@@ -219,7 +219,7 @@ Planned evolution areas include:
 - signed policy loading
 - namespace-aware enforcement
 - structured audit telemetry
-- runtime governance tooling
+- runtime enforcement tooling
 
 # Repository Philosophy
 
