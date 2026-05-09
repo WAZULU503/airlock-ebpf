@@ -1,8 +1,8 @@
 # Airlock
 
-Kernel-level execution governance using Rust, eBPF, and Linux Security Modules (LSM).
+Kernel-level execution control using Rust, eBPF, and Linux Security Modules (LSM).
 
-Intercept and govern process execution before userspace execution occurs.
+Intercept and control process execution before userspace execution occurs.
 
 **WARNING:** Airlock requires root privileges, BPF LSM enabled in the kernel, and can deny execution system-wide. Test inside a VM or isolated environment first.
 
@@ -20,7 +20,7 @@ The current prototype focuses on:
 - Kernel-level EPERM execution denial
 - Runtime BTF / CO-RE adaptation
 
-This repository explores deterministic execution governance through kernel-level enforcement rather than userspace trust boundaries.
+This repository explores kernel-level execution control through BPF LSM enforcement.
 
 The current implementation validates that userspace-controlled execution policies can be enforced through a BPF LSM hook before normal userspace execution begins.
 
@@ -78,7 +78,7 @@ The denial occurs inside the Linux kernel through a BPF LSM hook.
 
 # Why This Exists
 
-Most AI and automation runtimes rely entirely on userspace trust boundaries.
+Airlock explores enforcing execution policy at the kernel boundary rather than entirely in userspace.
 
 Airlock explores a different direction:
 
