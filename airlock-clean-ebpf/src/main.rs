@@ -11,6 +11,7 @@ use aya_ebpf::{
 
 use airlock_clean_common::{
     ACTION_ALLOW,
+    ACTION_DENY,
     FileIdentity,
     PolicyEntry,
 };
@@ -76,16 +77,34 @@ fn try_enforce(ctx: LsmContext) -> Result<i32, i32> {
         return Ok(0);
     }
 
-    let dev = unsafe { (*sb_ptr).s_dev };
+    let dev = unsafe { (*sb_ptr).s_dev as u64 };
 
     unsafe {
         core::ptr::read_volatile(&dev);
     }
 
-    // inode-backed deny test
-    if ino == 2621951 {
-        return Ok(-1);
-    }
+    let identity = FileIdentity {
+        dev,
+        ino,
+    };
 
-    Ok(0)
+    let entry = unsafe {
+        POLICY_MAP.get(&identity)
+    };
+
+    match entry {
+        Some(policy) => {
+            if policy.action == ACTION_DENY {
+                return Ok(-1);
+            }
+
+            if policy.action == ACTION_ALLOW {
+                return Ok(0);
+            }
+
+            Ok(0)
+        }
+
+        None => Ok(0),
+    }
 }
