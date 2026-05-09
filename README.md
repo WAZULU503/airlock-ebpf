@@ -18,7 +18,7 @@ The current prototype focuses on:
 - Verifier-safe kernel object traversal
 - Kernel-level EPERM execution denial
 
-This repository explores deterministic execution governance through kernel-level enforcement rather than userspace trust boundaries.
+This repository explores deterministic execution enforcement through kernel-level enforcement rather than userspace trust boundaries.
 
 This prevents compromised or injected userspace components from bypassing execution policies, since enforcement occurs before userspace execution begins.
 
@@ -75,7 +75,7 @@ Most AI and automation runtimes rely entirely on userspace trust boundaries.
 
 Airlock explores a different direction:
 
-- deterministic execution governance
+- deterministic execution enforcement
 - explicit execution boundaries
 - kernel-level interception
 - transparent runtime behavior
