@@ -88,8 +88,16 @@ unsafe fn observe(ctx: &LsmContext) {
     let dev: u64 =
         (*sb_ptr).s_dev as u64;
 
+    let identity = FileIdentity {
+        dev: 0,
+        ino,
+    };
+
     let action: u32 =
-        ACTION_ALLOW;
+        match POLICY_MAP.get(&identity) {
+            Some(policy) => policy.action,
+            None => ACTION_ALLOW,
+        };
 
     if let Some(mut entry) =
         EVENTS.reserve::<ExecEvent>(0)

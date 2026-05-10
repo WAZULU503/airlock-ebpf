@@ -1,16 +1,23 @@
 use aya::{
     include_bytes_aligned,
-    maps::RingBuf,
+    maps::{HashMap, RingBuf},
     util::online_cpus,
     Ebpf,
     Btf,
 };
 
+use std::fs;
+
+use airlock_clean_common::{
+    ACTION_DENY,
+    ExecEvent,
+    FileIdentity,
+    PolicyEntry,
+};
+
 use aya::programs::Lsm;
 
 use tokio::io::unix::AsyncFd;
-
-use airlock_clean_common::ExecEvent;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -36,6 +43,34 @@ async fn main() -> anyhow::Result<()> {
     program.attach()?;
 
     println!("[airlock] LSM attached");
+
+    let metadata =
+        fs::metadata("/usr/bin/id")?;
+
+    use std::os::linux::fs::MetadataExt;
+
+    let identity = FileIdentity {
+        dev: 0,
+        ino: metadata.st_ino(),
+    };
+
+    let policy = PolicyEntry {
+        action: ACTION_DENY,
+        reserved: 0,
+    };
+
+    let mut policy_map =
+        HashMap::<_, FileIdentity, PolicyEntry>::try_from(
+            ebpf.map_mut("POLICY_MAP").unwrap()
+        )?;
+
+    policy_map.insert(identity, policy, 0)?;
+
+    println!(
+        "[airlock] inserted DENY rule for /usr/bin/id dev={} ino={}",
+        identity.dev,
+        identity.ino,
+    );
 
     let ring =
         RingBuf::try_from(
