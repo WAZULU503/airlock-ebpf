@@ -43,3 +43,13 @@ unsafe impl Pod for FileIdentity {}
 
 #[cfg(feature = "user")]
 unsafe impl Pod for PolicyEntry {}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct ExecEvent {
+    pub dev: u64,
+    pub ino: u64,
+}
+
+const _: [(); 16] =
+    [(); core::mem::size_of::<ExecEvent>()];
