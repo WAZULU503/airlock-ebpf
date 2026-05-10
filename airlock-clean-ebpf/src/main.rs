@@ -10,7 +10,7 @@ use aya_ebpf::{
 };
 
 use airlock_clean_common::{
-    ACTION_DENY,
+    ACTION_ALLOW, ACTION_DENY,
     ExecEvent,
     FileIdentity,
     PolicyEntry,
@@ -85,9 +85,11 @@ unsafe fn observe(ctx: &LsmContext) {
     if sb_ptr.is_null() {
         return;
     }
-
     let dev: u64 =
         (*sb_ptr).s_dev as u64;
+
+    let action: u32 =
+        ACTION_ALLOW;
 
     if let Some(mut entry) =
         EVENTS.reserve::<ExecEvent>(0)
@@ -97,6 +99,8 @@ unsafe fn observe(ctx: &LsmContext) {
 
         (*evt).dev = dev;
         (*evt).ino = ino;
+        (*evt).action = action;
+        (*evt).reserved = 0;
 
         entry.submit(0);
     }

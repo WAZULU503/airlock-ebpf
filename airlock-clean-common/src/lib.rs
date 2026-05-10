@@ -49,7 +49,9 @@ unsafe impl Pod for PolicyEntry {}
 pub struct ExecEvent {
     pub dev: u64,
     pub ino: u64,
+    pub action: u32,
+    pub reserved: u32,
 }
 
-const _: [(); 16] =
+const _: [(); 24] =
     [(); core::mem::size_of::<ExecEvent>()];

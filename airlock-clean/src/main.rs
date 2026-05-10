@@ -64,9 +64,13 @@ async fn main() -> anyhow::Result<()> {
                 };
 
                 println!(
-                    "exec dev={} ino={}",
+                    "exec dev={} ino={} action={}",
                     evt.dev,
-                    evt.ino
+                    evt.ino,
+                    match evt.action {
+                        1 => "DENY",
+                        _ => "ALLOW",
+                    }
                 );
             }
         }
