@@ -87,7 +87,7 @@ unsafe fn observe(ctx: &LsmContext) -> i32 {
         (*sb_ptr).s_dev as u64;
 
     let identity = FileIdentity {
-        dev: 0,
+        dev,
         ino,
     };
 

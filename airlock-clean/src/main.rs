@@ -50,7 +50,19 @@ async fn main() -> anyhow::Result<()> {
     use std::os::linux::fs::MetadataExt;
 
     let identity = FileIdentity {
-        dev: 0,
+        dev: {
+            let major =
+                ((metadata.st_dev() >> 8) & 0xfff) as u64;
+
+            let minor =
+                (
+                    (metadata.st_dev() & 0xff)
+                    | ((metadata.st_dev() >> 12) & 0xfffff00)
+                ) as u64;
+
+            ((major & 0xfff) << 20)
+                | (minor & 0xfffff)
+        },
         ino: metadata.st_ino(),
     };
 

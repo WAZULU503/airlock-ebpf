@@ -33,7 +33,19 @@ fn main() -> anyhow::Result<()> {
         })?;
 
     let key = FileIdentity {
-        dev: 0,
+        dev: {
+            let major =
+                ((meta.st_dev() >> 8) & 0xfff) as u64;
+
+            let minor =
+                (
+                    (meta.st_dev() & 0xff)
+                    | ((meta.st_dev() >> 12) & 0xfffff00)
+                ) as u64;
+
+            ((major & 0xfff) << 20)
+                | (minor & 0xfffff)
+        },
         ino: meta.ino(),
     };
     
