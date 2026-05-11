@@ -22,6 +22,22 @@ This repository explores deterministic execution enforcement through kernel-leve
 
 This prevents compromised or injected userspace components from bypassing execution policies, since enforcement occurs before userspace execution begins.
 
+
+# Repository Layout
+
+Active runtime components:
+
+- `airlock-clean/` — userspace runtime loader and governance logic
+- `airlock-clean-ebpf/` — eBPF LSM enforcement program
+- `airlock-clean-common/` — shared ABI-safe policy and telemetry types
+
+Earlier experimental/runtime exploration directories remain preserved in:
+
+- `ebpf/`
+- `userspace/`
+
+These older directories are retained for architectural progression and historical reference, but are not the current canonical runtime path.
+
 # Current Status
 
 Verified on:
