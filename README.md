@@ -40,7 +40,7 @@ Verified capabilities:
 - Kernel-level execution denial via `EPERM`
 - Stable verifier-safe kernel object traversal
 
-The current prototype uses hardcoded enforcement logic for validation and testing purposes.
+The current prototype uses dynamic POLICY_MAP-based enforcement with structured telemetry (Phase 7).
 
 Dynamic policy maps and runtime-configurable governance are planned future phases.
 

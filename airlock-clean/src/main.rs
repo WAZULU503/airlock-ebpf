@@ -1,3 +1,5 @@
+mod policy;
+
 use std::{
     mem,
     os::unix::fs::MetadataExt,
@@ -26,6 +28,10 @@ use airlock_clean_common::{
     ExecutionEvent,
     FileIdentity,
     PolicyEntry,
+};
+
+use policy::{
+    SignedPolicy,
 };
 
 #[rustfmt::skip]
@@ -83,6 +89,46 @@ async fn main() -> anyhow::Result<()> {
             "/airlock-clean-ebpf"
         ))
     )?;
+
+    let body_bytes =
+        std::fs::read(
+            "policy/policy.bin"
+        )?;
+
+    let sig_bytes =
+        std::fs::read(
+            "policy/policy.sig"
+        )?;
+
+    let pub_key_bytes =
+        std::fs::read(
+            "policy/master.pub"
+        )?;
+
+    let signed_policy =
+        match SignedPolicy::verify_and_decode(
+            &body_bytes,
+            &sig_bytes,
+            &pub_key_bytes,
+        ) {
+            Ok(policy) => {
+                println!(
+                    "{{\"event\":\"POLICY_VERIFIED\",\"version\":{}}}",
+                    policy.body.version
+                );
+
+                policy
+            }
+
+            Err(e) => {
+                eprintln!(
+                    "{{\"event\":\"POLICY_REJECTED\",\"reason\":\"{}\"}}",
+                    e
+                );
+
+                std::process::exit(1);
+            }
+        };
 
     let mut policy_map: HashMap<
         _,

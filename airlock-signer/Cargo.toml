@@ -1,0 +1,24 @@
+[package]
+name = "airlock-signer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+ed25519-dalek = { workspace = true }
+postcard = { workspace = true }
+serde = { workspace = true }
+rand_core = { workspace = true }
+
+[[bin]]
+name = "airlock-signer"
+path = "src/main.rs"
+
+[[bin]]
+name = "policy-gen"
+path = "src/bin_policy_gen.rs"
+
+[[bin]]
+name = "pubkey-gen"
+path = "src/bin_pubkey.rs"

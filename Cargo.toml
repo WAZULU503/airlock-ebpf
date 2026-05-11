@@ -5,6 +5,7 @@ members = [
     "airlock-clean",
     "airlock-clean-common",
     "airlock-clean-ebpf",
+    "airlock-signer",
     "xtask",
 ]
 
@@ -34,3 +35,8 @@ libc = "0.2"
 log = "0.4"
 tokio = "1"
 which = "6"
+
+serde = { version = "1", features = ["derive"] }
+postcard = { version = "1", features = ["alloc"] }
+ed25519-dalek = { version = "2", default-features = false, features = ["std"] }
+rand_core = "0.6"
