@@ -17,6 +17,11 @@ use serde::{
     Serialize,
 };
 
+use sha2::{
+    Digest,
+    Sha256,
+};
+
 #[derive(
     Serialize,
     Deserialize,
@@ -24,6 +29,7 @@ use serde::{
     Clone,
     PartialEq,
 )]
+#[serde(deny_unknown_fields)]
 pub struct PolicyEntry {
     pub target_path: String,
     pub action: u32,
@@ -35,6 +41,7 @@ pub struct PolicyEntry {
     Debug,
     Clone,
 )]
+#[serde(deny_unknown_fields)]
 pub struct PolicyBody {
     pub version: u32,
 
@@ -46,6 +53,8 @@ pub struct PolicyBody {
 }
 
 pub struct SignedPolicy {
+    pub policy_id: [u8; 8],
+
     pub body: PolicyBody,
 
     pub signature: Signature,
@@ -90,6 +99,23 @@ impl SignedPolicy {
                 body_bytes
             )?;
 
+        let mut hasher =
+            Sha256::new();
+
+        hasher.update(
+            body_bytes
+        );
+
+        let digest =
+            hasher.finalize();
+
+        let mut policy_id =
+            [0u8; 8];
+
+        policy_id.copy_from_slice(
+            &digest[..8]
+        );
+
         let now =
             SystemTime::now()
                 .duration_since(
@@ -109,6 +135,7 @@ impl SignedPolicy {
 
         Ok(
             Self {
+                policy_id,
                 body,
                 signature,
             }

@@ -113,8 +113,9 @@ async fn main() -> anyhow::Result<()> {
         ) {
             Ok(policy) => {
                 println!(
-                    "{{\"event\":\"POLICY_VERIFIED\",\"version\":{}}}",
-                    policy.body.version
+                    "{{\"event\":\"POLICY_VERIFIED\",\"version\":{},\"policy_id\":\"{}\"}}",
+                    policy.body.version,
+                    hex::encode(policy.policy_id)
                 );
 
                 policy
