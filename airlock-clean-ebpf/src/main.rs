@@ -42,13 +42,11 @@ static EVENTS: RingBuf =
 #[lsm(hook = "bprm_check_security")]
 pub fn bprm_check_security(ctx: LsmContext) -> i32 {
     unsafe {
-        observe(&ctx);
+        observe(&ctx)
     }
-
-    0
 }
 
-unsafe fn observe(ctx: &LsmContext) {
+unsafe fn observe(ctx: &LsmContext) -> i32 {
     let bprm: *const linux_binprm =
         ctx.arg(0);
 
@@ -56,7 +54,7 @@ unsafe fn observe(ctx: &LsmContext) {
         (*bprm).file;
 
     if file_ptr.is_null() {
-        return;
+        return 0;
     }
 
     let f_path: path =
@@ -66,14 +64,14 @@ unsafe fn observe(ctx: &LsmContext) {
         f_path.dentry;
 
     if dentry_ptr.is_null() {
-        return;
+        return 0;
     }
 
     let inode_ptr: *mut inode =
         (*dentry_ptr).d_inode;
 
     if inode_ptr.is_null() {
-        return;
+        return 0;
     }
 
     let ino: u64 =
@@ -83,7 +81,7 @@ unsafe fn observe(ctx: &LsmContext) {
         (*inode_ptr).i_sb;
 
     if sb_ptr.is_null() {
-        return;
+        return 0;
     }
     let dev: u64 =
         (*sb_ptr).s_dev as u64;
@@ -112,4 +110,10 @@ unsafe fn observe(ctx: &LsmContext) {
 
         entry.submit(0);
     }
+
+    if action == ACTION_DENY {
+        return -1;
+    }
+
+    0
 }
