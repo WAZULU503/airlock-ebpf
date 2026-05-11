@@ -3,8 +3,21 @@
 
 mod vmlinux;
 
+use core::ffi::CStr;
+
+use airlock_clean_common::{
+    ACTION_DENY,
+    FileIdentity,
+    PolicyEntry,
+};
+
 use aya_ebpf::{
-    macros::lsm,
+    helpers::bpf_printk,
+    macros::{
+        lsm,
+        map,
+    },
+    maps::HashMap,
     programs::LsmContext,
 };
 
@@ -16,6 +29,19 @@ use crate::vmlinux::{
     path,
     super_block,
 };
+
+#[map(name = "POLICY_MAP")]
+static mut POLICY_MAP: HashMap<FileIdentity, PolicyEntry> =
+    HashMap::<FileIdentity, PolicyEntry>::with_max_entries(1024, 0);
+
+const LOOKUP_LOG: &CStr =
+    c"AIRLOCK lookup dev=%llu ino=%llu";
+
+const DENY_LOG: &CStr =
+    c"AIRLOCK DENY dev=%llu ino=%llu";
+
+const MISS_LOG: &CStr =
+    c"AIRLOCK MISS dev=%llu ino=%llu";
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
@@ -31,19 +57,21 @@ pub fn bprm_check_security(ctx: LsmContext) -> i32 {
 }
 
 fn try_enforce(ctx: LsmContext) -> Result<i32, i32> {
-    let bprm: *const linux_binprm = ctx.arg(0);
+    let bprm: *const linux_binprm =
+        ctx.arg(0);
 
-    let file_ptr: *mut file = unsafe { (*bprm).file };
+    let file_ptr: *mut file =
+        unsafe { (*bprm).file };
 
     if file_ptr.is_null() {
         return Ok(0);
     }
 
-    // bindgen wrapped f_path in anonymous union
     let f_path: path =
         unsafe { (*file_ptr).__bindgen_anon_1.f_path };
 
-    let dentry_ptr: *mut dentry = f_path.dentry;
+    let dentry_ptr: *mut dentry =
+        f_path.dentry;
 
     if dentry_ptr.is_null() {
         return Ok(0);
@@ -56,7 +84,8 @@ fn try_enforce(ctx: LsmContext) -> Result<i32, i32> {
         return Ok(0);
     }
 
-    let ino = unsafe { (*inode_ptr).i_ino as u64 };
+    let ino =
+        unsafe { (*inode_ptr).i_ino as u64 };
 
     let sb_ptr: *mut super_block =
         unsafe { (*inode_ptr).i_sb };
@@ -65,14 +94,47 @@ fn try_enforce(ctx: LsmContext) -> Result<i32, i32> {
         return Ok(0);
     }
 
-    let dev = unsafe { (*sb_ptr).s_dev };
+    let dev =
+        unsafe { (*sb_ptr).s_dev as u64 };
+
+    let identity = FileIdentity {
+        dev,
+        ino,
+    };
 
     unsafe {
-        core::ptr::read_volatile(&dev);
+        bpf_printk!(
+            LOOKUP_LOG,
+            dev,
+            ino
+        );
     }
 
-    // inode-backed deny test
-    if ino == 2621951 {
+    let action = unsafe {
+        match POLICY_MAP.get(&identity) {
+            Some(entry) => entry.action,
+
+            None => {
+                bpf_printk!(
+                    MISS_LOG,
+                    dev,
+                    ino
+                );
+
+                0
+            }
+        }
+    };
+
+    if action == ACTION_DENY {
+        unsafe {
+            bpf_printk!(
+                DENY_LOG,
+                dev,
+                ino
+            );
+        }
+
         return Ok(-1);
     }
 

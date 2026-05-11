@@ -11,7 +11,3 @@ aya-log-ebpf = { workspace = true }
 
 [build-dependencies]
 which = { workspace = true }
-
-[[bin]]
-name = "airlock-clean"
-path = "src/main.rs"

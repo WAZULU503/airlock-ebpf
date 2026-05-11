@@ -1,56 +1,159 @@
-use aya::{Btf, programs::Lsm};
+use std::os::unix::fs::MetadataExt;
+
+use aya::{
+    maps::HashMap,
+    programs::Lsm,
+    Btf,
+    Ebpf,
+};
+
+use airlock_clean_common::{
+    FileIdentity,
+    PolicyEntry,
+};
+
 #[rustfmt::skip]
 use log::{debug, warn};
+
 use tokio::signal;
+
+fn canonical_dev(dev: u64) -> u64 {
+    let major =
+        ((dev >> 8) & 0xfff) |
+        ((dev >> 32) & !0xfff);
+
+    let minor =
+        (dev & 0xff) |
+        ((dev >> 12) & !0xff);
+
+    (major << 20) | minor
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
 
-    // Bump the memlock rlimit. This is needed for older kernels that don't use the
-    // new memcg based accounting, see https://lwn.net/Articles/837122/
     let rlim = libc::rlimit {
         rlim_cur: libc::RLIM_INFINITY,
         rlim_max: libc::RLIM_INFINITY,
     };
-    let ret = unsafe { libc::setrlimit(libc::RLIMIT_MEMLOCK, &rlim) };
+
+    let ret = unsafe {
+        libc::setrlimit(
+            libc::RLIMIT_MEMLOCK,
+            &rlim,
+        )
+    };
+
     if ret != 0 {
-        debug!("remove limit on locked memory failed, ret is: {ret}");
+        debug!(
+            "failed to increase rlimit: {}",
+            ret
+        );
     }
 
-    // This will include your eBPF object file as raw bytes at compile-time and load it at
-    // runtime. This approach is recommended for most real-world use cases. If you would
-    // like to specify the eBPF program at runtime rather than at compile-time, you can
-    // reach for `Bpf::load_file` instead.
-    let mut ebpf = aya::Ebpf::load(aya::include_bytes_aligned!(concat!(
-        env!("OUT_DIR"),
-        "/airlock-clean"
-    )))?;
+    let mut ebpf = Ebpf::load(
+        aya::include_bytes_aligned!(concat!(
+            env!("OUT_DIR"),
+            "/airlock-clean-ebpf"
+        ))
+    )?;
+
     match aya_log::EbpfLogger::init(&mut ebpf) {
-        Err(e) => {
-            // This can happen if you remove all log statements from your eBPF program.
-            warn!("failed to initialize eBPF logger: {e}");
-        }
         Ok(logger) => {
             let mut logger =
-                tokio::io::unix::AsyncFd::with_interest(logger, tokio::io::Interest::READABLE)?;
+                tokio::io::unix::AsyncFd::with_interest(
+                    logger,
+                    tokio::io::Interest::READABLE,
+                )?;
+
             tokio::task::spawn(async move {
                 loop {
-                    let mut guard = logger.readable_mut().await.unwrap();
+                    let mut guard =
+                        logger.readable_mut().await.unwrap();
+
                     guard.get_inner_mut().flush();
+
                     guard.clear_ready();
                 }
             });
         }
+
+        Err(e) => {
+            warn!(
+                "failed to initialize eBPF logger: {}",
+                e
+            );
+        }
     }
+
+    let mut policy_map: HashMap<
+        _,
+        FileIdentity,
+        PolicyEntry,
+    > = HashMap::try_from(
+        ebpf.map_mut("POLICY_MAP").unwrap()
+    )?;
+
+    let deny_meta =
+        std::fs::metadata("/usr/bin/ping")?;
+
+    let deny_identity = FileIdentity {
+        dev: canonical_dev(deny_meta.dev()),
+        ino: deny_meta.ino(),
+    };
+
+    println!(
+        "DENY /usr/bin/ping dev={} ino={}",
+        deny_identity.dev,
+        deny_identity.ino
+    );
+
+    policy_map.insert(
+        deny_identity,
+        PolicyEntry::deny(),
+        0,
+    )?;
+
+    let allow_meta =
+        std::fs::metadata("/usr/bin/dash")?;
+
+    let allow_identity = FileIdentity {
+        dev: canonical_dev(allow_meta.dev()),
+        ino: allow_meta.ino(),
+    };
+
+    println!(
+        "ALLOW /usr/bin/dash dev={} ino={}",
+        allow_identity.dev,
+        allow_identity.ino
+    );
+
+    policy_map.insert(
+        allow_identity,
+        PolicyEntry::allow(),
+        0,
+    )?;
+
     let btf = Btf::from_sys_fs()?;
-    let program: &mut Lsm = ebpf.program_mut("bprm_check_security").unwrap().try_into()?;
-    program.load("bprm_check_security", &btf)?;
+
+    let program: &mut Lsm =
+        ebpf.program_mut("bprm_check_security")
+            .unwrap()
+            .try_into()?;
+
+    program.load(
+        "bprm_check_security",
+        &btf,
+    )?;
+
     program.attach()?;
 
-    let ctrl_c = signal::ctrl_c();
+    println!("AIRLOCK loaded");
     println!("Waiting for Ctrl-C...");
-    ctrl_c.await?;
+
+    signal::ctrl_c().await?;
+
     println!("Exiting...");
 
     Ok(())
