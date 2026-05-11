@@ -1,12 +1,10 @@
 # Airlock
 
-Kernel-level execution control using Rust, eBPF, and Linux Security Modules (LSM).
+Kernel-level execution enforcement using Rust, eBPF, and Linux Security Modules (LSM).
 
-Intercept and control process execution before userspace execution occurs.
+Intercept and govern process execution before userspace execution occurs.
 
-**WARNING:** Airlock requires root privileges, BPF LSM enabled in the kernel, and can deny execution system-wide. Test inside a VM or isolated environment first.
-
----
+> **WARNING:** Airlock requires root privileges, BPF LSM enabled in the kernel, and can deny execution system-wide. Test inside a VM or isolated environment first.
 
 # What Airlock Does
 
@@ -15,16 +13,14 @@ Airlock intercepts execution requests at the Linux kernel boundary using BPF LSM
 The current prototype focuses on:
 
 - BPF LSM execution interception
-- Verifier-safe eBPF map interaction
-- Runtime userspace-controlled blocklist updates
+- CO-RE runtime kernel adaptation
+- Canonical inode-backed identity extraction
+- Verifier-safe kernel object traversal
 - Kernel-level EPERM execution denial
-- Runtime BTF / CO-RE adaptation
 
-This repository explores kernel-level execution control through BPF LSM enforcement.
+This repository explores deterministic execution enforcement through kernel-level enforcement rather than userspace trust boundaries.
 
-The current implementation validates that userspace-controlled execution policies can be enforced through a BPF LSM hook before normal userspace execution begins.
-
----
+This prevents compromised or injected userspace components from bypassing execution policies, since enforcement occurs before userspace execution begins.
 
 # Current Status
 
@@ -39,31 +35,28 @@ Verified capabilities:
 
 - BPF LSM hook attachment
 - Runtime BTF / CO-RE adaptation
-- Verifier-safe eBPF program loading
-- Userspace-controlled runtime blocklist updates
+- `linux_binprm -> file -> f_path -> dentry -> d_inode` traversal
+- Canonical `(i_ino + s_dev)` extraction
 - Kernel-level execution denial via `EPERM`
-- Stable runtime userspace/kernel interaction
+- Stable verifier-safe kernel object traversal
 
-The current prototype uses a runtime-controlled blocklist map for validation and testing purposes.
+The current prototype validates userspace-controlled execution governance through a verifier-safe POLICY_MAP integrated into the BPF LSM execution path.
 
-More advanced inode-backed identity enforcement was explored experimentally but is not the currently committed runtime path.
+Runtime policy insertion, identity lookup, telemetry emission, and ACTION_DENY -> EPERM enforcement have been verified against a live kernel runtime.
 
----
-
-# Verified Runtime Flow
+# Verified Execution Path
 
 ```text
-userspace rules
-    -> BLOCKLIST map
-    -> bprm_check_security hook
-    -> kernel enforcement verdict
+linux_binprm
+    -> file
+    -> f_path
+    -> dentry
+    -> d_inode
+    -> (i_ino + s_dev)
+    -> enforcement verdict
 ```
 
-The current runtime prototype validates userspace-controlled execution governance through a BPF LSM hook.
-
-The repository also contains ongoing experimental work exploring stronger identity-backed policy models and governance telemetry evolution.
-
----
+This moved Airlock away from brittle pathname-only matching toward canonical kernel object identity.
 
 # Example Enforcement
 
@@ -76,224 +69,7 @@ bash: /usr/lib/cargo/bin/coreutils/ls: Operation not permitted
 
 The denial occurs inside the Linux kernel through a BPF LSM hook.
 
----
-
 # Why This Exists
 
-Airlock explores enforcing execution policy at the kernel boundary rather than entirely in userspace.
+Most AI and automation runtimes rely entirely on userspace trust boundaries.
 
-Airlock explores a different direction:
-
-- deterministic execution governance
-- explicit execution boundaries
-- kernel-level interception
-- transparent runtime behavior
-- observable enforcement semantics
-
-The project is intentionally small in scope and focused on validating the kernel enforcement substrate first.
-
----
-
-# Important Scope Note
-
-Airlock is currently an experimental research/runtime prototype.
-
-This repository does NOT yet provide:
-
-- production endpoint security
-- enterprise EDR functionality
-- inode-backed production enforcement
-- namespace/container isolation
-- signed policy management
-- hardened recovery tooling
-- distributed telemetry infrastructure
-
-The current goal is validating correctness and stability of the kernel enforcement path.
-
----
-
-# Repository Layout
-
-Current active runtime components:
-
-- `ebpf/` — kernel eBPF LSM program
-- `userspace/` — runtime loader and control utilities
-- `xtask/` — development/build orchestration helpers
-
-Additional directories contain earlier experimental phases and retained research iterations.
-
----
-
-# Quickstart
-
-## Prerequisites
-
-### Rust Toolchains
-
-```bash
-rustup toolchain install stable
-rustup toolchain install nightly --component rust-src
-```
-
-### Required Tools
-
-```bash
-cargo install bpf-linker
-```
-
-### Kernel Requirements
-
-Airlock requires:
-
-- Linux kernel with BPF LSM enabled
-- BTF support enabled
-- `debugfs` mounted
-- root privileges
-
-Verify BPF LSM availability:
-
-```bash
-grep CONFIG_BPF_LSM /boot/config-$(uname -r)
-
-cat /sys/kernel/security/lsm
-```
-
-The active LSM list should contain:
-
-```text
-bpf
-```
-
----
-
-# Build
-
-## Userspace
-
-```bash
-cargo build -p airlock-user
-```
-
-## eBPF Program
-
-```bash
-cargo build -Z build-std=core \
-    -p airlock-ebpf \
-    --target bpfel-unknown-none \
-    --release
-```
-
----
-
-# Runtime Verification
-
-Verified runtime attach example:
-
-```bash
-sudo env "PATH=$PATH" \
-RUSTUP_TOOLCHAIN=nightly \
-target/debug/airlock-user
-```
-
-Expected output:
-
-```text
-LSM attached
-```
-
-Runtime verification:
-
-```bash
-sudo bpftool prog list | grep -A5 bprm
-```
-
-Example verified output:
-
-```text
-lsm  name bprm_check_secu
-```
-
----
-
-# CO-RE Binding Generation
-
-Airlock generates runtime kernel bindings directly from the live kernel BTF.
-
-Example:
-
-```bash
-bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
-```
-
-Bindings are generated using `bindgen` with scoped allowlists.
-
-This enables runtime adaptation across kernel layouts without relying on hardcoded offsets.
-
----
-
-# Cross-Compiling on macOS
-
-Cross-compilation works on both Intel and Apple Silicon Macs.
-
-```bash
-CC=${ARCH}-linux-musl-gcc cargo build \
-  --package airlock-clean \
-  --release \
-  --target=${ARCH}-unknown-linux-musl \
-  --config=target.${ARCH}-unknown-linux-musl.linker="${ARCH}-linux-musl-gcc"
-```
-
-The resulting binary can be copied into a Linux VM or server for execution.
-
----
-
-# Freeze Tags
-
-Important repository milestones:
-
-- `v1-lsm-baseline`
-- `phase2-core-path-extraction`
-- `phase2.1-enforcement-verified`
-- `phase3-canonical-inode-enforcement`
-
-The tag progression reflects the architectural evolution from:
-
-```text
-hook attach
-    -> pathname extraction
-    -> verified enforcement
-    -> inode-backed exploration
-```
-
----
-
-# Planned Exploration Areas
-
-Planned evolution areas include:
-
-- dynamic kernel policy maps
-- inode-backed enforcement return
-- signed policy loading
-- namespace-aware enforcement
-- structured audit telemetry
-- runtime governance tooling
-
----
-
-# Repository Philosophy
-
-Airlock intentionally prioritizes:
-
-- deterministic behavior
-- transparent execution flow
-- explicit governance boundaries
-- verifier-safe kernel interaction
-- observable enforcement semantics
-
-The repository is structured to show the progression from:
-
-```text
-initial LSM attach
-    -> runtime blocklist enforcement
-    -> future identity-backed governance exploration
-```
