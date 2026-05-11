@@ -262,3 +262,33 @@ bash: /usr/bin/ping: Operation not permitted
 
 This denial was verified through live `POLICY_MAP` governance and kernel-level enforcement.
 
+
+## Structured Execution Telemetry
+
+Airlock now emits structured execution telemetry from the kernel enforcement path through an eBPF RingBuf transport.
+
+Execution events are emitted before verdict return, preserving telemetry-before-verdict semantics even during execution denial.
+
+Current execution states:
+
+- ALLOW
+- DENY
+- MISS
+
+Telemetry schema (`v=1`):
+
+```json
+{"v":1,"ts":1778485154,"dev":265289730,"ino":2621960,"action":"ALLOW"}
+```
+
+Execution flow:
+
+```text
+LSM hook
+    -> canonical identity extraction
+    -> POLICY_MAP lookup
+    -> ExecutionEvent emission
+    -> RingBuf transport
+    -> kernel verdict
+    -> userspace JSONL telemetry
+```
