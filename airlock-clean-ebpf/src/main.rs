@@ -3,21 +3,24 @@
 
 mod vmlinux;
 
-use core::ffi::CStr;
-
 use airlock_clean_common::{
+    ACTION_ALLOW,
     ACTION_DENY,
+    ACTION_MISS,
+    ExecutionEvent,
     FileIdentity,
     PolicyEntry,
 };
 
 use aya_ebpf::{
-    helpers::bpf_printk,
     macros::{
         lsm,
         map,
     },
-    maps::HashMap,
+    maps::{
+        HashMap,
+        RingBuf,
+    },
     programs::LsmContext,
 };
 
@@ -34,14 +37,9 @@ use crate::vmlinux::{
 static mut POLICY_MAP: HashMap<FileIdentity, PolicyEntry> =
     HashMap::<FileIdentity, PolicyEntry>::with_max_entries(1024, 0);
 
-const LOOKUP_LOG: &CStr =
-    c"AIRLOCK lookup dev=%llu ino=%llu";
-
-const DENY_LOG: &CStr =
-    c"AIRLOCK DENY dev=%llu ino=%llu";
-
-const MISS_LOG: &CStr =
-    c"AIRLOCK MISS dev=%llu ino=%llu";
+#[map(name = "EVENTS")]
+static mut EVENTS: RingBuf =
+    RingBuf::with_byte_size(256 * 1024, 0);
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
@@ -102,41 +100,39 @@ fn try_enforce(ctx: LsmContext) -> Result<i32, i32> {
         ino,
     };
 
-    unsafe {
-        bpf_printk!(
-            LOOKUP_LOG,
-            dev,
-            ino
-        );
-    }
-
     let action = unsafe {
         match POLICY_MAP.get(&identity) {
             Some(entry) => entry.action,
-
-            None => {
-                bpf_printk!(
-                    MISS_LOG,
-                    dev,
-                    ino
-                );
-
-                0
-            }
+            None => ACTION_MISS,
         }
     };
 
-    if action == ACTION_DENY {
-        unsafe {
-            bpf_printk!(
-                DENY_LOG,
-                dev,
-                ino
-            );
-        }
+    let event = ExecutionEvent {
+        dev,
+        ino,
+        action,
+        _pad: 0,
+    };
 
-        return Ok(-1);
+    unsafe {
+        EVENTS.output::<ExecutionEvent>(&event, 0);
     }
 
-    Ok(0)
+    match action {
+        ACTION_ALLOW => {
+            Ok(0)
+        }
+
+        ACTION_DENY => {
+            Err(-1)
+        }
+
+        ACTION_MISS => {
+            Ok(0)
+        }
+
+        _ => {
+            Ok(0)
+        }
+    }
 }

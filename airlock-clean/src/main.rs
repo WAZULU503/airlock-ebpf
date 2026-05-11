@@ -1,13 +1,29 @@
-use std::os::unix::fs::MetadataExt;
+use std::{
+    mem,
+    os::unix::fs::MetadataExt,
+    slice,
+    time::{
+        SystemTime,
+        UNIX_EPOCH,
+    },
+};
 
 use aya::{
-    maps::HashMap,
+    maps::{
+        HashMap,
+        RingBuf,
+    },
     programs::Lsm,
+    util::online_cpus,
     Btf,
     Ebpf,
 };
 
 use airlock_clean_common::{
+    ACTION_ALLOW,
+    ACTION_DENY,
+    ACTION_MISS,
+    ExecutionEvent,
     FileIdentity,
     PolicyEntry,
 };
@@ -27,6 +43,15 @@ fn canonical_dev(dev: u64) -> u64 {
         ((dev >> 12) & !0xff);
 
     (major << 20) | minor
+}
+
+fn action_name(action: u32) -> &'static str {
+    match action {
+        ACTION_ALLOW => "ALLOW",
+        ACTION_DENY => "DENY",
+        ACTION_MISS => "MISS",
+        _ => "UNKNOWN",
+    }
 }
 
 #[tokio::main]
@@ -58,34 +83,6 @@ async fn main() -> anyhow::Result<()> {
             "/airlock-clean-ebpf"
         ))
     )?;
-
-    match aya_log::EbpfLogger::init(&mut ebpf) {
-        Ok(logger) => {
-            let mut logger =
-                tokio::io::unix::AsyncFd::with_interest(
-                    logger,
-                    tokio::io::Interest::READABLE,
-                )?;
-
-            tokio::task::spawn(async move {
-                loop {
-                    let mut guard =
-                        logger.readable_mut().await.unwrap();
-
-                    guard.get_inner_mut().flush();
-
-                    guard.clear_ready();
-                }
-            });
-        }
-
-        Err(e) => {
-            warn!(
-                "failed to initialize eBPF logger: {}",
-                e
-            );
-        }
-    }
 
     let mut policy_map: HashMap<
         _,
@@ -151,6 +148,47 @@ async fn main() -> anyhow::Result<()> {
 
     println!("AIRLOCK loaded");
     println!("Waiting for Ctrl-C...");
+
+    let mut ring =
+        RingBuf::try_from(
+            ebpf.map_mut("EVENTS").unwrap()
+        )?;
+
+
+    loop {
+        while let Some(item) = ring.next() {
+                let bytes = item.as_ref();
+
+                if bytes.len()
+                    != mem::size_of::<ExecutionEvent>()
+                {
+                    continue;
+                }
+
+                let event: ExecutionEvent = unsafe {
+                    core::ptr::read_unaligned(
+                        bytes.as_ptr()
+                            as *const ExecutionEvent
+                    )
+                };
+
+                let ts =
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs();
+
+                println!(
+                    "{{\"v\":1,\"ts\":{},\"dev\":{},\"ino\":{},\"action\":\"{}\"}}",
+                    ts,
+                    event.dev,
+                    event.ino,
+                    action_name(event.action),
+                );
+                    }
+    }
+
+
 
     signal::ctrl_c().await?;
 
