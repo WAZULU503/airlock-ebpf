@@ -38,6 +38,11 @@ Verified capabilities:
 - `linux_binprm -> file -> f_path -> dentry -> d_inode` traversal
 - Canonical `(i_ino + s_dev)` extraction
 - Kernel-level execution denial via `EPERM`
+- Live execve interception verified on active kernel runtime
+- Structured kernel telemetry emission verified
+- Dynamic POLICY_MAP enforcement verified
+- Detached Ed25519 policy signature verification verified
+- Deterministic SHA256-derived policy identity verified
 - Stable verifier-safe kernel object traversal
 
 The current prototype uses dynamic POLICY_MAP-based enforcement with structured telemetry and detached Ed25519-signed policy verification with deterministic SHA256-derived governance identity (Phase 9.1).
@@ -201,6 +206,8 @@ Important repository milestones:
 - `phase2-core-path-extraction`
 - `phase2.1-enforcement-verified`
 - `phase3-canonical-inode-enforcement`
+- `v0.6-live-kernel-substrate`
+- `v0.9.1`
 
 The tag progression reflects the architectural evolution from:
 
@@ -220,6 +227,28 @@ Planned evolution areas include:
 - namespace-aware enforcement
 - structured audit telemetry
 - runtime governance tooling
+- semantic parity verification between Rust model and BPF runtime
+- adversarial stress harness validation
+
+# Verified vs Planned
+
+Verified:
+
+- live BPF LSM interception
+- canonical executable identity extraction
+- kernel execution denial (`-EPERM`)
+- POLICY_MAP runtime enforcement
+- detached signed governance verification
+- structured runtime telemetry
+- live kernel execution traversal
+
+In Progress / Exploratory:
+
+- semantic parity verification harness
+- adversarial stress testing
+- attach lifecycle validation
+- telemetry loss tolerance analysis
+- verifier complexity boundary analysis
 
 # Repository Philosophy
 
