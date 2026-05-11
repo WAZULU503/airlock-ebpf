@@ -40,9 +40,9 @@ Verified capabilities:
 - Kernel-level execution denial via `EPERM`
 - Stable verifier-safe kernel object traversal
 
-The current prototype uses dynamic POLICY_MAP-based enforcement with structured telemetry (Phase 7).
+The current prototype uses dynamic POLICY_MAP-based enforcement with structured telemetry and detached Ed25519-signed policy verification (Phase 8).
 
-Dynamic policy maps and runtime-configurable governance are planned future phases.
+Runtime policy loading, signed governance verification, and POLICY_MAP population have been verified against a live kernel runtime.
 
 # Verified Execution Path
 
@@ -292,3 +292,38 @@ LSM hook
     -> kernel verdict
     -> userspace JSONL telemetry
 ```
+
+## Signed Governance (Phase 8)
+
+Airlock now verifies detached Ed25519-signed policy payloads before kernel governance activation.
+
+Policies are:
+
+- canonically encoded using Postcard
+- signed using detached Ed25519 signatures
+- verified before `POLICY_MAP` population
+- rejected fail-closed on signature mismatch
+
+Verified governance activation sequence:
+
+```text
+policy.bin
+    -> Ed25519 verification
+    -> fail-closed gate
+    -> POLICY_MAP population
+    -> LSM enforcement
+    -> RingBuf telemetry
+```
+
+Verified tamper behavior:
+
+```text
+tampered policy
+    -> POLICY_REJECTED
+    -> immediate exit(1)
+    -> no kernel governance activation
+```
+
+The private signing authority (`policy/master.key`) is excluded from version control.
+
+Runtime privilege alone is insufficient to authorize governance changes without a valid policy signature.
