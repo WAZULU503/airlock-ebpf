@@ -234,3 +234,31 @@ Airlock intentionally prioritizes:
 The repository is structured to show the progression from:
 
 `initial LSM attach -> runtime extraction -> canonical inode traversal -> kernel enforcement`
+
+## Governed Execution Flow
+
+```text
+userspace policy loader
+    ↓
+canonical FileIdentity extraction
+    ↓
+POLICY_MAP insertion
+    ↓
+BPF LSM lookup
+    ↓
+ACTION_ALLOW / ACTION_DENY
+    ↓
+kernel enforcement (-EPERM)
+```
+
+Execution decisions are enforced inside the Linux kernel through the `bprm_check_security` LSM hook before userspace execution begins.
+
+## Verified Enforcement Example
+
+```bash
+/usr/bin/ping -c 1 127.0.0.1
+bash: /usr/bin/ping: Operation not permitted
+```
+
+This denial was verified through live `POLICY_MAP` governance and kernel-level enforcement.
+
