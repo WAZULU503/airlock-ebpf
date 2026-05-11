@@ -59,7 +59,9 @@ userspace rules
     -> kernel enforcement verdict
 ```
 
-The current prototype validates runtime userspace-controlled execution governance through a BPF LSM hook.
+The current runtime prototype validates userspace-controlled execution governance through a BPF LSM hook.
+
+The repository also contains ongoing experimental work exploring stronger identity-backed policy models and governance telemetry evolution.
 
 ---
 
