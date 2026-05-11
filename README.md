@@ -14,7 +14,7 @@ The current prototype focuses on:
 
 - BPF LSM execution interception
 - CO-RE runtime kernel adaptation
-- Canonical inode-backed identity extraction
+- Canonical kernel object identity extraction
 - Verifier-safe kernel object traversal
 - Kernel-level EPERM execution denial
 
@@ -40,9 +40,30 @@ Verified capabilities:
 - Kernel-level execution denial via `EPERM`
 - Stable verifier-safe kernel object traversal
 
-The current prototype uses hardcoded enforcement logic for validation and testing purposes.
+The current prototype validates userspace-governed execution enforcement
+through a verifier-safe `POLICY_MAP` integrated directly into the
+BPF LSM execution path.
 
-Dynamic policy maps and runtime-configurable enforcement are planned future phases.
+Verified capabilities include:
+
+- Runtime policy insertion
+- Canonical `FileIdentity(dev, ino)` matching
+- POLICY_MAP identity lookup
+- Observable ALLOW / DENY telemetry transitions
+- ACTION_DENY -> EPERM kernel enforcement
+- Canonical userspace `st_dev` normalization into kernel-compatible `dev_t`
+- Zero bypass paths remaining in the runtime
+
+Verified Governance Flow
+
+userspace policy
+    -> canonical FileIdentity(dev, ino)
+    -> POLICY_MAP insertion
+    -> bprm_check_security hook
+    -> kernel identity extraction
+    -> POLICY_MAP lookup
+    -> ALLOW / DENY verdict
+    -> EPERM enforcement
 
 # Verified Execution Path
 
@@ -57,6 +78,14 @@ linux_binprm
 ```
 
 This moved Airlock away from brittle pathname-only matching toward canonical kernel object identity.
+
+Airlock currently enforces against operational kernel object identity
+(`i_ino + s_dev`), not cryptographic file identity.
+
+Future phases may augment this with fs-verity or IMA-backed
+measurement signals, but the current runtime intentionally focuses
+on deterministic governance using canonical kernel identity.
+
 
 # Example Enforcement
 
