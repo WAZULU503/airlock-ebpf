@@ -216,7 +216,7 @@ hook attach
 Planned evolution areas include:
 
 - dynamic kernel policy maps
-- signed policy loading
+- multi-key trust rotation and policy revocation
 - namespace-aware enforcement
 - structured audit telemetry
 - runtime governance tooling
