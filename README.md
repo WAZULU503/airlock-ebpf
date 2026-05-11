@@ -92,7 +92,7 @@ This repository does NOT yet provide:
 - production endpoint security
 - enterprise EDR functionality
 - namespace/container isolation
-- signed policy management
+- advanced multi-key policy lifecycle management
 - hardened recovery tooling
 - distributed telemetry infrastructure
 
