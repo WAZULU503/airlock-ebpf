@@ -249,6 +249,72 @@ Verified live parity targets:
 Parity verification confirmed that governance intent and live kernel enforcement behavior remained semantically equivalent under runtime execution.
 
 
+# Replay Verification Progression
+
+The repository now includes progressively layered replay verification phases built on top of the governed execution runtime.
+
+## Phase 10 — Semantic Parity
+
+Verified semantic equivalence between:
+
+- signed governance policy
+- canonical executable identity
+- POLICY_MAP runtime state
+- BPF LSM enforcement
+- observable userspace behavior
+- runtime telemetry emission
+
+Verified targets:
+
+- ALLOW: `/usr/bin/dash`
+- DENY: `/usr/bin/ping`
+
+Tag:
+
+- `phase10-live-semantic-parity`
+
+---
+
+## Phase 11 — Controlled Nondeterminism
+
+Validated replay integrity under bounded repeated execution pressure.
+
+Verified properties:
+
+- repeated replay stability
+- deterministic ALLOW/DENY behavior
+- preserved replay ordering
+- preserved EPERM enforcement semantics
+- no observed replay drift
+
+Tag:
+
+- `phase11-controlled-nondeterminism`
+
+---
+
+## Phase 12 — Controlled Concurrency
+
+Validated concurrent replay execution against a shared runtime enforcement surface.
+
+Verified properties:
+
+- concurrent replay lane execution
+- interleaved global scheduling
+- preserved lane-local replay integrity
+- preserved concurrent enforcement semantics
+- interpretable concurrent replay artifacts
+
+Tag:
+
+- `phase12-controlled-concurrency`
+
+---
+
+These phases establish replay-oriented runtime verification layers before introducing asynchronous telemetry ingestion, replay burst pressure, or higher-order concurrency stress.
+
+
+
 # Verified vs Planned
 
 Verified:
