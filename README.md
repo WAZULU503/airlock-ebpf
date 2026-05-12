@@ -230,6 +230,25 @@ Planned evolution areas include:
 - semantic parity verification between Rust model and BPF runtime
 - adversarial stress harness validation
 
+# Semantic Parity Verification
+
+Phase 10 established minimal live semantic parity verification between:
+
+- signed governance policy
+- canonical executable identity
+- POLICY_MAP runtime state
+- BPF LSM enforcement
+- observable userspace behavior
+- structured telemetry emission
+
+Verified live parity targets:
+
+- ALLOW: `/usr/bin/dash`
+- DENY: `/usr/bin/ping`
+
+Parity verification confirmed that governance intent and live kernel enforcement behavior remained semantically equivalent under runtime execution.
+
+
 # Verified vs Planned
 
 Verified:
