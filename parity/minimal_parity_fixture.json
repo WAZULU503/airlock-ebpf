@@ -1,0 +1,25 @@
+{
+  "phase": "phase10-minimal-parity-bootstrap",
+  "targets": {
+    "allow": {
+      "requested_path": "/usr/bin/true",
+      "resolved_path": "/usr/bin/dash",
+      "inode": 2621960,
+      "device": "fd02",
+      "expected_verdict": "ALLOW"
+    },
+    "deny": {
+      "requested_path": "/usr/bin/false",
+      "resolved_path": "/usr/bin/ping",
+      "inode": 2622563,
+      "device": "fd02",
+      "expected_verdict": "DENY"
+    }
+  },
+  "parity_requirements": {
+    "canonical_identity": true,
+    "telemetry_required": true,
+    "stage_id_required": true,
+    "pathname_authoritative": false
+  }
+}

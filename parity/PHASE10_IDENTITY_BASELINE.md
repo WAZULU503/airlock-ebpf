@@ -17,11 +17,11 @@ Requested Path:
 
 Resolved Executable:
 
-/usr/bin/gnutrue
+/usr/bin/dash
 
 Canonical Identity:
 
-- inode: 2622222
+- inode: 2621960
 - device: fd02
 
 Executable Type:
@@ -38,11 +38,11 @@ Requested Path:
 
 Resolved Executable:
 
-/usr/lib/cargo/bin/coreutils/false
+/usr/bin/ping
 
 Canonical Identity:
 
-- inode: 2621951
+- inode: 2622563
 - device: fd02
 
 Executable Type:

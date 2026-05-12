@@ -10,11 +10,11 @@ Establish a deterministic allow/deny policy pair for minimal parity verification
 
 Executable:
 
-/usr/bin/gnutrue
+/usr/bin/dash
 
 Canonical Identity:
 
-- inode: 2622222
+- inode: 2621960
 - device: fd02
 
 Expected Verdict:
@@ -31,11 +31,11 @@ Minimal deterministic executable for successful execution parity.
 
 Executable:
 
-/usr/lib/cargo/bin/coreutils/false
+/usr/bin/ping
 
 Canonical Identity:
 
-- inode: 2621951
+- inode: 2622563
 - device: fd02
 
 Expected Verdict:
