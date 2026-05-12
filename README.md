@@ -315,6 +315,48 @@ These phases establish replay-oriented runtime verification layers before introd
 
 
 
+# Replay Verification Research
+
+The repository now includes progressively layered replay verification and interpretability experiments built on top of the governed execution runtime.
+
+These phases explore how replay evidence, telemetry interpretation, and causal reconstruction behave under increasing replay pressure while preserving deterministic kernel enforcement semantics.
+
+## Replay Verification Progression
+
+| Phase | Focus |
+|---|---|
+| Phase 10 | semantic parity verification |
+| Phase 11 | controlled nondeterminism |
+| Phase 12 | controlled concurrency |
+| Phase 13 | buffered telemetry observation |
+| Phase 14 | replay window drift |
+| Phase 15 | replay attribution stress |
+| Phase 16 | replay saturation threshold |
+
+Verified replay properties include:
+
+- replay evidence preservation
+- EPERM enforcement stability
+- concurrent replay interpretability
+- delayed observation resilience
+- replay attribution stability
+- bounded replay saturation resilience
+
+Replay artifacts and verification boundaries are documented in:
+
+- `VERIFICATION_INDEX.md`
+- `REPLAY_ARTIFACTS.md`
+
+The current repository boundary intentionally stops before:
+
+- distributed replay systems
+- asynchronous telemetry queues
+- probabilistic replay reconstruction
+- replay flooding
+- unbounded concurrency
+
+
+
 # Verified vs Planned
 
 Verified:
