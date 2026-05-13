@@ -1,0 +1,9 @@
+{
+  "run_id": "p21_composite_p1_j50",
+  "omission_model": "P1_PERIODIC",
+  "jitter_ms": 50,
+  "C1": "CONTESTED",
+  "C2": "HOLDS",
+  "C3": "COLLAPSED",
+  "notes": "combined omission and temporal distortion collapse cross-chain ordering confidence faster than isolated pressure models"
+}
