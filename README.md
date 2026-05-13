@@ -191,10 +191,13 @@ Current replay progression:
 | Phase 14 | replay window drift             |
 | Phase 15 | replay attribution stress       |
 | Phase 16 | replay saturation threshold     |
-| Phase 17 | partial attribution ambiguity   |
-| Phase 18 | partial ordering reconstruction |
-| Phase 19 | replay pressure modeling        |
-| Phase 20 | temporal reconstruction degradation |
+| Phase 17 | partial attribution ambiguity        |
+| Phase 18 | partial ordering reconstruction      |
+| Phase 19 | replay pressure modeling             |
+| Phase 20 | temporal reconstruction degradation  |
+| Phase 21 | composite replay pressure            |
+| Phase 22 | replay confidence scoring            |
+| Phase 23 | replay collapse surface mapping      |
 
 Verified replay properties include:
 
@@ -203,6 +206,9 @@ Verified replay properties include:
 * replay attribution stability
 * bounded attribution ambiguity reconstruction
 * bounded replay ordering reconstruction
+* replay degradation pressure modeling
+* replay confidence scoring
+* replay collapse surface classification
 * stable `-EPERM` enforcement semantics
 
 The current repository boundary intentionally excludes:
