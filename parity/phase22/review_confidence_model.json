@@ -1,0 +1,8 @@
+{
+  "run_id": "p22_confidence_model",
+  "input_model": "P21_COMPOSITE_P1_J50",
+  "density": 0.67,
+  "score": 0.32,
+  "classification": "C3",
+  "notes": "compound degradation reduces replay confidence below stable reconstruction threshold"
+}
