@@ -193,6 +193,8 @@ Current replay progression:
 | Phase 16 | replay saturation threshold     |
 | Phase 17 | partial attribution ambiguity   |
 | Phase 18 | partial ordering reconstruction |
+| Phase 19 | replay pressure modeling        |
+| Phase 20 | temporal reconstruction degradation |
 
 Verified replay properties include:
 
@@ -223,6 +225,8 @@ Repository tags act as a chronological verification chain.
 | Phase 10–16 | LSM interception and replay verification |
 | Phase 17    | partial attribution ambiguity            |
 | Phase 18    | partial ordering reconstruction          |
+| Phase 19    | replay pressure modeling                 |
+| Phase 20    | temporal reconstruction degradation      |
 
 ---
 
