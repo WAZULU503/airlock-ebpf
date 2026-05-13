@@ -1,0 +1,7 @@
+{
+  "run_id": "p19_p1_d0.67_s0",
+  "C1": "HOLDS",
+  "C2": "HOLDS",
+  "C3": "CONTESTED",
+  "notes": "every third event omitted; intra-chain recovery stable; cross-chain ordering partially ambiguous"
+}
