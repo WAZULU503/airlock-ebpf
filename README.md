@@ -333,6 +333,7 @@ These phases explore how replay evidence, telemetry interpretation, and causal r
 | Phase 15 | replay attribution stress |
 | Phase 16 | replay saturation threshold |
 | Phase 17 | partial attribution ambiguity |
+| Phase 18 | partial ordering reconstruction |
 
 Verified replay properties include:
 
@@ -343,6 +344,7 @@ Verified replay properties include:
 - replay attribution stability
 - bounded replay saturation resilience
 - bounded attribution ambiguity reconstruction
+- bounded replay ordering reconstruction
 
 Replay artifacts and verification boundaries are documented in:
 
@@ -354,6 +356,12 @@ Replay artifacts and verification boundaries are documented in:
 Phase 17 introduced the first observable replay cognition friction boundary.
 
 Replay interpretation remained viable and reconstructable, but replay ownership and causal grouping became less visually immediate under bounded semantic adjacency pressure.
+
+
+
+Phase 18 introduced the first observable replay ordering recovery boundary.
+
+Replay interpretation remained viable and reconstructable, but causal replay sequencing became less visually immediate under bounded replay ordering incompleteness pressure.
 
 The current repository boundary intentionally stops before:
 
