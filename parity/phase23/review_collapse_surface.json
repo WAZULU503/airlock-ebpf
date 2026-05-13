@@ -1,0 +1,7 @@
+{
+  "run_id": "p23_collapse_surface",
+  "C1_boundary": "stable under isolated conditions",
+  "C2_boundary": "transitional ambiguity region",
+  "C3_boundary": "compound degradation collapse",
+  "notes": "combined omission and temporal pressure accelerate replay reconstruction collapse beyond isolated replay degradation models"
+}
