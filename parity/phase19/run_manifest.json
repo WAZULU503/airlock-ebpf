@@ -1,0 +1,12 @@
+{
+  "run_id": "p19_p1_d0.67_s0",
+  "variant": "P1",
+  "density": 0.67,
+  "seed": 0,
+  "drop_n": 3,
+  "phase_offset": 0,
+  "chain_length": 12,
+  "chains": 3,
+  "baseline_events": 36,
+  "remaining_events": 24
+}
