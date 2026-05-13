@@ -1,0 +1,8 @@
+{
+  "run_id": "p20_jitter_50ms",
+  "jitter_ratio": 0.5,
+  "C1": "HOLDS",
+  "C2": "HOLDS",
+  "C3": "CONTESTED",
+  "notes": "cross-chain ordering ambiguity begins at 0.5 interval distortion"
+}

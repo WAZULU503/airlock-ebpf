@@ -1,0 +1,8 @@
+{
+  "run_id": "p20_jitter_100ms",
+  "jitter_ratio": 1.0,
+  "C1": "HOLDS",
+  "C2": "HOLDS",
+  "C3": "COLLAPSED",
+  "notes": "timestamp distortion equals mean event interval; cross-chain ordering no longer uniquely reconstructable"
+}
