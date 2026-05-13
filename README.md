@@ -223,11 +223,6 @@ Repository tags act as a chronological verification chain.
 | ----------- | ---------------------------------------- |
 | Phase 1–9   | identity and governance substrate        |
 | Phase 10–16 | LSM interception and replay verification |
-| Phase 17    | partial attribution ambiguity            |
-| Phase 18    | partial ordering reconstruction          |
-| Phase 19    | replay pressure modeling                 |
-| Phase 20    | temporal reconstruction degradation      |
-
 ---
 
 # Build & Run
