@@ -1,50 +1,67 @@
 # Airlock
 
-Kernel-level execution enforcement using Rust, eBPF, and Linux Security Modules (LSM).
+Kernel-level execution enforcement and replay reconstruction research
+using Rust, eBPF, Aya, and Linux Security Modules (LSM).
 
-Intercept and govern process execution before userspace execution occurs.
+---
 
-> **WARNING:** Airlock requires root privileges, BPF LSM enabled in the kernel, and can deny execution system-wide. Test inside a VM or isolated environment first.
+# WARNING
+
+Airlock requires:
+
+- root privileges
+- BPF LSM enabled in the kernel
+- modern Linux kernel with BTF support
+
+The project can deny execution system-wide through kernel-level
+enforcement paths.
+
+Test inside isolated environments, VMs, or disposable systems only.
+
+---
 
 # What Airlock Does
 
-Airlock intercepts execution requests at the Linux kernel boundary using BPF LSM hooks.
+Airlock intercepts execution requests at the Linux kernel boundary
+using the `bprm_check_security` BPF LSM hook.
 
-The current prototype focuses on:
+The enforcement layer is complete and frozen at v0.9.1.
 
-- BPF LSM execution interception
-- CO-RE runtime kernel adaptation
-- Canonical inode-backed identity extraction
-- Verifier-safe kernel object traversal
-- Kernel-level EPERM execution denial
+---
 
-This repository explores deterministic execution enforcement through kernel-level enforcement rather than userspace trust boundaries.
+# Enforcement Layer — COMPLETE / FROZEN (v0.9.1)
 
-This prevents compromised or injected userspace components from bypassing execution policies, since enforcement occurs before userspace execution begins.
+## Verified Capabilities
 
-# Current Status
-
-Verified on:
-
-- Ubuntu ARM64 VM
-- Linux kernel `6.7+`
-- Apple Silicon virtualization environments (UTM / VMware Fusion)
-- Aya eBPF runtime
-
-Verified capabilities:
-
-- BPF LSM hook attachment
-- Runtime BTF / CO-RE adaptation
+- `bprm_check_security` LSM hook attachment
+- CO-RE / BTF runtime kernel adaptation
 - `linux_binprm -> file -> f_path -> dentry -> d_inode` traversal
-- Canonical `(i_ino + s_dev)` extraction
-- Kernel-level execution denial via `EPERM`
-- Stable verifier-safe kernel object traversal
+- canonical `(i_ino + s_dev)` identity extraction
+- verifier-safe kernel object traversal
+- kernel-level execution denial via EPERM
+- POLICY_MAP runtime governance integration
+- ExecutionEvent RingBuf JSONL telemetry emission (schema v=1, frozen)
+- detached Ed25519 signed policy
+- `SHA256(policy.bin)[0..8]` = `policy_id`
+- postcard serialization
+- fail-closed tamper rejection
+- `deny_unknown_fields` enforced on all deserialization paths
 
-The current prototype validates userspace-controlled execution governance through a verifier-safe POLICY_MAP integrated into the BPF LSM execution path.
+## Verdict Model
 
-Runtime policy insertion, identity lookup, telemetry emission, and ACTION_DENY -> EPERM enforcement have been verified against a live kernel runtime.
+```text
+ACTION_ALLOW = 1
+ACTION_DENY  = 2
+ACTION_MISS  = 3   (identity absent from POLICY_MAP → fail-closed)
+```
 
-# Verified Execution Path
+## Telemetry Invariant
+
+Every enforcement decision must be reconstructable from telemetry alone.
+Every signal that influenced the decision must appear in the record.
+No hidden state.
+
+## Verified Execution Path
 
 ```text
 linux_binprm
@@ -53,23 +70,80 @@ linux_binprm
     -> dentry
     -> d_inode
     -> (i_ino + s_dev)
-    -> enforcement verdict
+    -> POLICY_MAP lookup
+    -> verdict (ALLOW / DENY / MISS)
+    -> ExecutionEvent RingBuf emission
+    -> EPERM on DENY or MISS
 ```
 
-This moved Airlock away from brittle pathname-only matching toward canonical kernel object identity.
+## Verified On
 
-# Example Enforcement
+- Ubuntu ARM64 VM
+- Linux kernel 6.7+
+- Apple Silicon virtualization environments
+- Aya eBPF runtime
 
-Example execution denial:
+## Intentionally Not Built
 
-```bash
-$ /usr/lib/cargo/bin/coreutils/ls
-bash: /usr/lib/cargo/bin/coreutils/ls: Operation not permitted
+- EDR
+- PKI
+- TPM
+- Sigstore
+- container orchestration
+- distributed enforcement
+
+---
+
+# Research Layer — ACTIVE (Phase 19)
+
+Phase 19 uses Airlock telemetry as the replay substrate for
+bounded causal reconstruction research.
+
+The enforcement layer is not modified.
+The research layer operates on replay windows derived from
+ExecutionEvent JSONL output.
+
+## Research Question
+
+At what point does a structurally valid, cryptographically intact
+telemetry record become causally underdetermined — where multiple
+incompatible causal interpretations are equally supported by the
+same replay evidence?
+
+## Pressure Model
+
+```text
+Axis 1 — Observation density     (positional omission, deterministic)
+Axis 2 — Temporal resolution     (jitter ratio against event interval)
+Axis 3 — Interleaving depth      (multiplier only, not primary pressure)
 ```
 
-The denial occurs inside the Linux kernel through a BPF LSM hook.
+## Reconstruction Confidence Conditions
 
-# Why This Exists
+```text
+C1 — causal predecessor uniquely assignable
+C2 — event attribution unambiguous
+C3 — cross-chain ordering resolves to single valid sequence
+```
 
-Most AI and automation runtimes rely entirely on userspace trust boundaries.
+Confidence is non-viable when any condition reaches COLLAPSED,
+or when two or more reach CONTESTED simultaneously.
+
+## Phase 19 Scope Boundary
+
+```text
+EXCLUDED:  class-based omission
+EXCLUDED:  semantic event weighting
+EXCLUDED:  stochastic omission
+EXCLUDED:  random corruption
+EXCLUDED:  modifications to the enforcement layer
+```
+
+---
+
+# Permanent Principle
+
+Every enforcement decision must be reconstructable from telemetry alone.
+Every signal that influenced the decision must appear in the record.
+No hidden state.
 
