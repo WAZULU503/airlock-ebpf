@@ -1,6 +1,3 @@
-cd ~/airlock-ebpf
-
-cat > README.md <<'EOF'
 # Airlock
 
 Kernel-level execution enforcement and replay reconstruction research
@@ -166,10 +163,3 @@ Every signal that influenced the decision must appear in the record.
 
 No hidden state.
 
-EOF
-
-git add README.md
-
-git commit -m "docs: restore replay phase progression"
-
-git push origin phase10-minimal-parity-bootstrap
